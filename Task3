@@ -1,0 +1,139 @@
+import random
+import string
+import pyperclip # For easy copying to clipboard
+import os # For clearing screen
+
+class PasswordGenerator:
+    """
+    A robust password generator that allows users to customize
+    password length and character types.
+    """
+    def __init__(self):
+        self.char_sets = {
+            "lowercase": string.ascii_lowercase,
+            "uppercase": string.ascii_uppercase,
+            "digits": string.digits,
+            "special": string.punctuation
+        }
+
+    def generate(self, length: int, use_lowercase: bool, use_uppercase: bool,
+                 use_digits: bool, use_special: bool) -> str:
+        """
+        Generates a random password based on the specified criteria.
+
+        Args:
+            length (int): The desired length of the password.
+            use_lowercase (bool): Include lowercase letters.
+            use_uppercase (bool): Include uppercase letters.
+            use_digits (bool): Include digits.
+            use_special (bool): Include special characters.
+
+        Returns:
+            str: The generated password.
+
+        Raises:
+            ValueError: If no character types are selected or length is invalid.
+        """
+        all_chars = []
+        if use_lowercase:
+            all_chars.extend(list(self.char_sets["lowercase"]))
+        if use_uppercase:
+            all_chars.extend(list(self.char_sets["uppercase"]))
+        if use_digits:
+            all_chars.extend(list(self.char_sets["digits"]))
+        if use_special:
+            all_chars.extend(list(self.char_sets["special"]))
+
+        if not all_chars:
+            raise ValueError("At least one character type must be selected!")
+        if length <= 0:
+            raise ValueError("Password length must be a positive number!")
+
+        # Ensure at least one character from each selected type is present
+        password_chars = []
+        if use_lowercase:
+            password_chars.append(random.choice(self.char_sets["lowercase"]))
+        if use_uppercase:
+            password_chars.append(random.choice(self.char_sets["uppercase"]))
+        if use_digits:
+            password_chars.append(random.choice(self.char_sets["digits"]))
+        if use_special:
+            password_chars.append(random.choice(self.char_sets["special"]))
+
+        # Fill the rest of the password length with random choices from all allowed characters
+        for _ in range(length - len(password_chars)):
+            password_chars.append(random.choice(all_chars))
+
+        # Shuffle the password characters to ensure randomness
+        random.shuffle(password_chars)
+
+        return "".join(password_chars)
+
+class UI:
+    """Handles the user interface for the password generator."""
+    def __init__(self, generator: PasswordGenerator):
+        self.generator = generator
+
+    def _clear_screen(self):
+        """Clears the terminal screen for better readability."""
+        os.system('cls' if os.name == 'nt' else 'clear')
+
+    def _get_yes_no_input(self, prompt: str) -> bool:
+        """Helper to get a boolean (yes/no) input from the user."""
+        while True:
+            response = input(f"> {prompt} (y/n): ").lower().strip()
+            if response == 'y':
+                return True
+            elif response == 'n':
+                return False
+            else:
+                print("Invalid input. Please enter 'y' or 'n'.")
+
+    def run(self):
+        """Runs the main loop of the password generator application."""
+        while True:
+            self._clear_screen()
+            print("🔐 Super Secure Password Generator 🔐")
+            print("-----------------------------------")
+
+            try:
+                length = int(input("> Enter desired password length: ").strip())
+                if length <= 0:
+                    raise ValueError("Length must be a positive number.")
+            except ValueError:
+                print("Invalid input for length. Please enter a number.")
+                input("Press Enter to try again...")
+                continue
+
+            use_lowercase = self._get_yes_no_input("Include lowercase letters?")
+            use_uppercase = self._get_yes_no_input("Include uppercase letters?")
+            use_digits = self._get_yes_no_input("Include numbers?")
+            use_special = self._get_yes_no_input("Include special characters (e.g., !@#$)?")
+
+            try:
+                generated_password = self.generator.generate(
+                    length, use_lowercase, use_uppercase, use_digits, use_special
+                )
+                print("\n🎉 Your Generated Password: 🎉")
+                print(f"   {generated_password}")
+
+                try:
+                    pyperclip.copy(generated_password)
+                    print("\n(Password copied to clipboard!)")
+                except pyperclip.PyperclipException:
+                    print("\n(Could not copy to clipboard. Please install 'pyperclip' or copy manually.)")
+                    print("  To install: pip install pyperclip")
+
+            except ValueError as e:
+                print(f"\nError: {e}")
+
+            print("\n-----------------------------------")
+            again = input("Generate another password? (y/n): ").lower().strip()
+            if again != 'y':
+                print("Exiting password generator. Stay secure! 👋")
+                break
+
+if __name__ == "__main__":
+    pwd_gen = PasswordGenerator()
+    app_ui = UI(pwd_gen)
+    app_ui.run()
